@@ -7,8 +7,8 @@ set -e
 # Update system
 yum update -y
 
-# Install Node.js 20.x (LTS)
-curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+# Install Node.js 24.x (LTS)
+curl -fsSL https://rpm.nodesource.com/setup_24.x | bash -
 yum install -y nodejs
 
 # Install Git

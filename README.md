@@ -23,7 +23,7 @@ This is a monorepo containing:
 ### Technology Stack
 
 **Backend:**
-- Node.js 20+ with TypeScript
+- Node.js 24+ with TypeScript
 - Express.js for HTTP API
 - Socket.IO for real-time WebSocket communication
 - Redis for game state and session management
@@ -53,7 +53,7 @@ This is a monorepo containing:
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - Redis (Docker recommended: `docker run -d -p 6379:6379 redis:7`)
 - Git
 

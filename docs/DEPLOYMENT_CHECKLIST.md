@@ -143,7 +143,7 @@ ssh -i ~/.ssh/prompt-guessr-key.pem ec2-user@<EC2_PUBLIC_IP>
 ```
 
 - [ ] Successfully connected to EC2
-- [ ] Verify Node.js installed: `node --version` (should be v20.x)
+- [ ] Verify Node.js installed: `node --version` (should be v24.x)
 - [ ] Verify PM2 installed: `pm2 --version`
 
 ### 2. Clone and Setup Backend

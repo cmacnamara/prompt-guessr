@@ -47,7 +47,7 @@ applyTo: '**'
 - **Zustand** for client state management (lightweight, simple)
 
 **Backend:**
-- **Node.js 20+** with TypeScript
+- **Node.js 24+** with TypeScript
 - **Express.js** for HTTP server
 - **Socket.IO** for WebSocket real-time communication
   - Rooms/namespaces for game isolation
