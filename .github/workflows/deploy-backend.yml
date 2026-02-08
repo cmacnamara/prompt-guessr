@@ -100,6 +100,9 @@ jobs:
           ssh -i ~/.ssh/id_rsa ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             
+            # Create app directory structure if it doesn't exist
+            mkdir -p ~/prompt-guessr/prompt-guessr-backend
+            
             # Navigate to app directory
             cd ~/prompt-guessr/prompt-guessr-backend
             
