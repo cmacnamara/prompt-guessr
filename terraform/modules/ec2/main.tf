@@ -80,7 +80,7 @@ resource "aws_instance" "backend" {
   })
 
   root_block_device {
-    volume_size = 8 # GB - free tier allows up to 30GB
+    volume_size = 30 # GB - Amazon Linux 2023 AMI requires minimum 30GB
     volume_type = "gp3"
   }
 

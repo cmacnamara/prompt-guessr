@@ -32,6 +32,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "images" {
     id     = "delete-old-images"
     status = "Enabled"
 
+    filter {}
+
     expiration {
       days = 30
     }
