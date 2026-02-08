@@ -2,7 +2,7 @@ import 'dotenv/config';  // Load environment variables FIRST
 import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
-import { initRedis, closeRedis } from './storage/redis-client';
+import { initRedis, closeRedis, getRedisClient } from './storage/redis-client';
 import { initializeImageService } from './services/image-service';
 import { logger } from './utils/logger';
 import roomRoutes from './routes/room-routes';
@@ -15,11 +15,22 @@ const app = express();
 const httpServer = createServer(app);
 
 /**
+ * Get CORS origin from environment
+ */
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
+
+// Validate CORS_ORIGIN in production
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+  logger.error('CORS_ORIGIN environment variable is required in production');
+  process.exit(1);
+}
+
+/**
  * Configure Socket.IO with CORS
  */
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.NEXT_PUBLIC_SOCKET_URL?.replace(':3001', ':3000') || 'http://localhost:3000',
+    origin: CORS_ORIGIN,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -32,7 +43,7 @@ app.use(express.json());
 
 // CORS for REST endpoints
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -40,10 +51,49 @@ app.use((req, res, next) => {
 });
 
 /**
- * Health check endpoint
+ * Health check endpoint - includes Redis connectivity status
  */
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  try {
+    const redisClient = getRedisClient();
+    const redisStatus = redisClient.isReady ? 'connected' : 'disconnected';
+    
+    if (!redisClient.isReady) {
+      return res.status(503).json({ 
+        status: 'degraded', 
+        redis: redisStatus,
+        timestamp: new Date().toISOString() 
+      });
+    }
+    
+    res.json({ 
+      status: 'ok', 
+      redis: redisStatus,
+      timestamp: new Date().toISOString() 
+    });
+  } catch (error) {
+    res.status(503).json({ 
+      status: 'error', 
+      redis: 'not_initialized',
+      timestamp: new Date().toISOString() 
+    });
+  }
+});
+
+/**
+ * Ready check endpoint - only returns 200 when fully initialized
+ */
+app.get('/ready', (req, res) => {
+  try {
+    const redisClient = getRedisClient();
+    if (redisClient.isReady) {
+      res.status(200).json({ ready: true });
+    } else {
+      res.status(503).json({ ready: false, reason: 'redis_not_ready' });
+    }
+  } catch (error) {
+    res.status(503).json({ ready: false, reason: 'not_initialized' });
+  }
 });
 
 /**
