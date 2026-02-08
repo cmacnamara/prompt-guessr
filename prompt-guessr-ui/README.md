@@ -4,7 +4,7 @@ Next.js 14 frontend for the Prompt Guessr game.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - Backend server running on `localhost:3001`
 
 ## Setup

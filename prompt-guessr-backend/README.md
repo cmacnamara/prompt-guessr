@@ -4,7 +4,7 @@ Express.js + Socket.IO + Redis backend server for the Prompt Guessr game.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - Redis server running on `localhost:6379` (or via Docker)
 
 ## Setup
