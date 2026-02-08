@@ -13,7 +13,7 @@ terraform {
   # 1. S3 bucket for state storage
   # 2. DynamoDB table for state locking
   backend "s3" {
-    bucket         = "prompt-guessr-terraform-state-REPLACE-ME"
+    bucket         = "prompt-guessr-terraform-state-1770526945"
     key            = "production/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "terraform-locks"
