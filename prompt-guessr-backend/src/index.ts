@@ -1,4 +1,4 @@
-import 'dotenv/config';  // Load environment variables FIRST
+import 'dotenv/config';  // Load environment variables from .env file
 import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
