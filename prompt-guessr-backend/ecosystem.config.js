@@ -14,7 +14,7 @@ module.exports = {
   apps: [
     {
       name: 'prompt-guessr-backend',
-      script: './dist/index.js',
+      script: './dist/src/index.js',
       
       // Single instance (free tier EC2 is single-core)
       instances: 1,
