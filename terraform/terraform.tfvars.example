@@ -1,0 +1,26 @@
+# Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your actual values
+# DO NOT commit terraform.tfvars to git (contains secrets)
+
+# Project configuration
+project_name = "prompt-guessr"
+environment  = "production"
+aws_region   = "us-east-1"
+
+# SSH access
+# Name of SSH key pair already created in AWS EC2
+ssh_key_name = "prompt-guessr-key"
+
+# Your public IP address for SSH access (CIDR notation)
+# Find your IP: curl ifconfig.me
+# Example: "203.0.113.50/32"
+allowed_ssh_cidr = "YOUR_IP_ADDRESS/32"
+
+# GitHub configuration
+# Format: "owner/repository"
+github_repository = "yourusername/prompt-guessr"
+
+# GitHub personal access token
+# Generate at: https://github.com/settings/tokens
+# Required scopes: repo, admin:repo_hook
+github_token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
