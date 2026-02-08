@@ -8,7 +8,9 @@ data "http" "github_meta" {
 locals {
   github_meta = jsondecode(data.http.github_meta.response_body)
   # GitHub Actions uses "actions" IP ranges
-  github_actions_ips = local.github_meta.actions
+  # Separate IPv4 and IPv6 addresses (IPv6 contains colons)
+  github_actions_ipv4 = [for ip in local.github_meta.actions : ip if !contains(split("", ip), ":")]
+  github_actions_ipv6 = [for ip in local.github_meta.actions : ip if contains(split("", ip), ":")]
 }
 
 # EC2 Security Group (Backend Server)
@@ -69,7 +71,8 @@ resource "aws_security_group_rule" "ec2_ssh_github_actions" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = local.github_actions_ips
+  cidr_blocks       = local.github_actions_ipv4
+  ipv6_cidr_blocks  = local.github_actions_ipv6
   description       = "SSH from GitHub Actions for CI/CD deployments"
   security_group_id = aws_security_group.ec2.id
 }
