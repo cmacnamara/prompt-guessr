@@ -1,0 +1,126 @@
+name: Sync Shared Types
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'prompt-guessr-backend/shared/**'
+      - 'prompt-guessr-ui/shared/**'
+  pull_request:
+    paths:
+      - 'prompt-guessr-backend/shared/**'
+      - 'prompt-guessr-ui/shared/**'
+
+jobs:
+  verify-types-sync:
+    name: Verify Shared Types are Synced
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Compare shared types directories
+        run: |
+          echo "Comparing shared types between backend and frontend..."
+          
+          # Get list of files in each directory
+          BACKEND_FILES=$(cd prompt-guessr-backend/shared && find . -type f | sort)
+          FRONTEND_FILES=$(cd prompt-guessr-ui/shared && find . -type f | sort)
+          
+          # Check if file lists match
+          if [ "$BACKEND_FILES" != "$FRONTEND_FILES" ]; then
+            echo "❌ ERROR: File lists don't match!"
+            echo ""
+            echo "Backend files:"
+            echo "$BACKEND_FILES"
+            echo ""
+            echo "Frontend files:"
+            echo "$FRONTEND_FILES"
+            exit 1
+          fi
+          
+          echo "✅ File lists match"
+          echo ""
+          
+          # Compare content of each file
+          DIFF_FOUND=0
+          for file in $BACKEND_FILES; do
+            if ! diff -q "prompt-guessr-backend/shared/$file" "prompt-guessr-ui/shared/$file" > /dev/null; then
+              echo "❌ DIFF FOUND: $file"
+              echo "Differences:"
+              diff "prompt-guessr-backend/shared/$file" "prompt-guessr-ui/shared/$file" || true
+              echo ""
+              DIFF_FOUND=1
+            else
+              echo "✅ $file is synced"
+            fi
+          done
+          
+          if [ $DIFF_FOUND -eq 1 ]; then
+            echo ""
+            echo "❌ ERROR: Shared types are not synced between backend and frontend!"
+            echo ""
+            echo "To fix:"
+            echo "1. Decide which version is correct (backend or frontend)"
+            echo "2. Copy from correct version to the other:"
+            echo "   cp -r prompt-guessr-backend/shared/* prompt-guessr-ui/shared/"
+            echo "   OR"
+            echo "   cp -r prompt-guessr-ui/shared/* prompt-guessr-backend/shared/"
+            echo "3. Commit and push the synced files"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All shared types are synced!"
+      
+      - name: Check TypeScript compilation (backend)
+        run: |
+          cd prompt-guessr-backend
+          npm ci
+          npx tsc --noEmit
+      
+      - name: Check TypeScript compilation (frontend)
+        run: |
+          cd prompt-guessr-ui
+          npm ci
+          npx tsc --noEmit
+
+  suggest-symlink-solution:
+    name: Suggest Symlink Solution
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+      - name: Comment with suggestion
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `#### ⚠️ Shared Types Drift Detected
+            
+            The shared types between backend and frontend are out of sync.
+            
+            **Recommended Solution:**
+            
+            Consider using a symlink or npm workspace to share types:
+            
+            \`\`\`bash
+            # Option 1: Use symlink (local development)
+            rm -rf prompt-guessr-ui/shared
+            ln -s ../prompt-guessr-backend/shared prompt-guessr-ui/shared
+            
+            # Option 2: Use npm workspaces (recommended)
+            # Create a shared package that both apps import
+            \`\`\`
+            
+            For now, manually sync the files and ensure they match.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
