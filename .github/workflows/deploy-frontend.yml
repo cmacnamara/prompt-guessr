@@ -31,17 +31,7 @@ jobs:
         run: npm ci
       
       - name: Verify environment variables are documented
-        working-directory: prompt-guessr-ui
-        run: |
-          if ! grep -q "NEXT_PUBLIC_API_URL" .env.example; then
-            echo "❌ NEXT_PUBLIC_API_URL not documented in .env.example"
-            exit 1
-          fi
-          if ! grep -q "NEXT_PUBLIC_SOCKET_URL" .env.example; then
-            echo "❌ NEXT_PUBLIC_SOCKET_URL not documented in .env.example"
-            exit 1
-          fi
-          echo "✅ Environment variables documented"
+        run: ./scripts/deploy-frontend/verify-env-vars.sh
       
       - name: Build Next.js
         working-directory: prompt-guessr-ui
