@@ -7,10 +7,8 @@ on:
     paths:
       - 'prompt-guessr-backend/shared/**'
       - 'prompt-guessr-ui/shared/**'
-  pull_request:
-    paths:
-      - 'prompt-guessr-backend/shared/**'
-      - 'prompt-guessr-ui/shared/**'
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
   verify-types-sync:

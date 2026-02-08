@@ -7,7 +7,8 @@ on:
     paths:
       - 'prompt-guessr-ui/**'
       - '.github/workflows/deploy-frontend.yml'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
   build-check:

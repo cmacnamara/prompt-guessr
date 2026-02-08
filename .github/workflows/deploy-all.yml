@@ -1,0 +1,86 @@
+name: Deploy All (Orchestrator)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_terraform:
+        description: 'Run Terraform Infrastructure'
+        required: false
+        default: true
+        type: boolean
+      terraform_action:
+        description: 'Terraform action (if enabled)'
+        required: false
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+      run_sync_types:
+        description: 'Run Sync Shared Types'
+        required: false
+        default: true
+        type: boolean
+      run_deploy_backend:
+        description: 'Run Deploy Backend'
+        required: false
+        default: true
+        type: boolean
+      run_deploy_frontend:
+        description: 'Run Deploy Frontend'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  # Step 1: Provision/verify infrastructure
+  terraform:
+    name: Terraform
+    if: ${{ inputs.run_terraform }}
+    uses: ./.github/workflows/terraform.yml
+    secrets: inherit
+    with:
+      action: ${{ inputs.terraform_action }}
+  
+  # Step 2: Verify types are synced
+  sync-types:
+    name: Sync Types
+    if: ${{ inputs.run_sync_types && !cancelled() }}
+    needs: terraform
+    uses: ./.github/workflows/sync-types.yml
+    secrets: inherit
+  
+  # Step 3: Deploy backend to EC2
+  deploy-backend:
+    name: Deploy Backend
+    if: ${{ inputs.run_deploy_backend && !cancelled() }}
+    needs: [sync-types]
+    uses: ./.github/workflows/deploy-backend.yml
+    secrets: inherit
+  
+  # Step 4: Deploy frontend to Amplify
+  deploy-frontend:
+    name: Deploy Frontend
+    if: ${{ inputs.run_deploy_frontend && !cancelled() }}
+    needs: [deploy-backend]
+    uses: ./.github/workflows/deploy-frontend.yml
+    secrets: inherit
+  
+  summary:
+    name: Deployment Summary
+    needs: [terraform, sync-types, deploy-backend, deploy-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Workflow Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Terraform**: ${{ needs.terraform.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Sync Types**: ${{ needs.sync-types.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend Deploy**: ${{ needs.deploy-backend.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend Deploy**: ${{ needs.deploy-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Triggered by: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

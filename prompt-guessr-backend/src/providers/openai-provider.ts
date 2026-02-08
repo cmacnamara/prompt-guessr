@@ -11,8 +11,8 @@ import { logger } from '../utils/logger.js';
  */
 export class OpenAIProvider implements ImageProvider {
   private readonly client: OpenAI;
-  private model: OpenAIModel;
-  private size: OpenAIImageSize;
+  private readonly model: OpenAIModel;
+  private readonly size: OpenAIImageSize;
 
   constructor(
     apiKey?: string,

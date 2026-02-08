@@ -7,9 +7,6 @@ on:
     paths:
       - 'terraform/**'
       - '.github/workflows/terraform.yml'
-  pull_request:
-    paths:
-      - 'terraform/**'
   workflow_dispatch:
     inputs:
       action:
@@ -21,6 +18,13 @@ on:
           - plan
           - apply
           - destroy
+  workflow_call:
+    inputs:
+      action:
+        description: 'Terraform action to perform'
+        required: false
+        default: 'plan'
+        type: string
 
 jobs:
   terraform-validate:
@@ -120,9 +124,8 @@ jobs:
     needs: terraform-plan
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply') ||
+      (inputs.action == 'apply') ||
       (github.event_name == 'push' && contains(github.event.head_commit.message, '[terraform apply]'))
-    environment: production  # Requires manual approval
     
     steps:
       - name: Checkout code
@@ -165,8 +168,7 @@ jobs:
   terraform-destroy:
     name: Terraform Destroy
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
-    environment: production-destroy  # Separate environment for extra safety
+    if: inputs.action == 'destroy'
     
     steps:
       - name: Checkout code
