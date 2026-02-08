@@ -1,5 +1,16 @@
 # Security Groups Module - Firewall Rules
 
+# Fetch GitHub's IP ranges for Actions runners
+data "http" "github_meta" {
+  url = "https://api.github.com/meta"
+}
+
+locals {
+  github_meta = jsondecode(data.http.github_meta.response_body)
+  # GitHub Actions uses "actions" IP ranges
+  github_actions_ips = local.github_meta.actions
+}
+
 # EC2 Security Group (Backend Server)
 resource "aws_security_group" "ec2" {
   name        = "${var.project_name}-${var.environment}-ec2-sg"
@@ -48,7 +59,18 @@ resource "aws_security_group_rule" "ec2_ssh" {
   to_port           = 22
   protocol          = "tcp"
   cidr_blocks       = [var.allowed_ssh_cidr]
-  description       = "SSH from allowed IP only"
+  description       = "SSH from personal IP"
+  security_group_id = aws_security_group.ec2.id
+}
+
+# SSH from GitHub Actions for deployment (dynamically fetched IP ranges)
+resource "aws_security_group_rule" "ec2_ssh_github_actions" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = local.github_actions_ips
+  description       = "SSH from GitHub Actions for CI/CD deployments"
   security_group_id = aws_security_group.ec2.id
 }
 
