@@ -53,7 +53,7 @@ jobs:
   # Step 3: Deploy backend to EC2
   deploy-backend:
     name: Deploy Backend
-    if: ${{ inputs.run_deploy_backend && !cancelled() }}
+    if: ${{ inputs.run_deploy_backend && (always() && !cancelled()) }}
     needs: [sync-types]
     uses: ./.github/workflows/deploy-backend.yml
     secrets: inherit
@@ -61,7 +61,7 @@ jobs:
   # Step 4: Deploy frontend to Amplify
   deploy-frontend:
     name: Deploy Frontend
-    if: ${{ inputs.run_deploy_frontend && !cancelled() }}
+    if: ${{ inputs.run_deploy_frontend && (always() && !cancelled()) }}
     needs: [deploy-backend]
     uses: ./.github/workflows/deploy-frontend.yml
     secrets: inherit
