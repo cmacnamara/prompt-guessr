@@ -24,19 +24,6 @@ resource "aws_amplify_app" "frontend" {
   enable_branch_auto_build    = true
   enable_branch_auto_deletion = false
 
-  # Custom rules for Next.js SPA routing (prevent 404s)
-  custom_rule {
-    source = "/<*>"
-    status = "404"
-    target = "/index.html"
-  }
-
-  custom_rule {
-    source = "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>"
-    status = "200"
-    target = "/index.html"
-  }
-
   tags = {
     Name = "${var.project_name}-${var.environment}-frontend"
   }
