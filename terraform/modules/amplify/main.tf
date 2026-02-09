@@ -8,6 +8,9 @@ resource "aws_amplify_app" "frontend" {
   # OAuth token for GitHub access
   access_token = var.github_token
 
+  # Platform for Next.js SSR (required for server-side rendering)
+  platform = "WEB_COMPUTE"
+
   # Build spec is now in amplify.yml at repo root
   # Amplify will automatically detect and use it
 

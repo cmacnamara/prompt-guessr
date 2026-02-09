@@ -3,11 +3,10 @@ frontend:
   phases:
     preBuild:
       commands:
-        - cd prompt-guessr-ui
-        - npm ci
+        - npm ci --prefix prompt-guessr-ui
     build:
       commands:
-        - npm run build
+        - npm run build --prefix prompt-guessr-ui
   artifacts:
     baseDirectory: prompt-guessr-ui
     files:
