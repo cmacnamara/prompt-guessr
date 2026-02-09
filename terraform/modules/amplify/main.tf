@@ -21,7 +21,7 @@ resource "aws_amplify_app" "frontend" {
           commands:
             - npm run build
       artifacts:
-        baseDirectory: prompt-guessr-ui/.next
+        baseDirectory: prompt-guessr-ui
         files:
           - '**/*'
       cache:
