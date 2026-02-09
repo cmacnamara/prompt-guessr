@@ -16,8 +16,9 @@ resource "aws_amplify_app" "frontend" {
 
   # Environment variables
   environment_variables = {
-    NEXT_PUBLIC_API_URL    = var.backend_url
-    NEXT_PUBLIC_SOCKET_URL = var.backend_url
+    NEXT_PUBLIC_API_URL       = var.backend_url
+    NEXT_PUBLIC_SOCKET_URL    = var.backend_url
+    AMPLIFY_MONOREPO_APP_ROOT = "prompt-guessr-ui"
     # For Next.js SSR in Amplify
     _LIVE_PACKAGE_UPDATES = jsonencode([{ "pkg" : "next-version", "type" : "internal", "version" : "latest" }])
   }
@@ -43,7 +44,8 @@ resource "aws_amplify_branch" "main" {
   stage     = "PRODUCTION"
 
   environment_variables = {
-    NEXT_PUBLIC_API_URL    = var.backend_url
-    NEXT_PUBLIC_SOCKET_URL = var.backend_url
+    NEXT_PUBLIC_API_URL       = var.backend_url
+    NEXT_PUBLIC_SOCKET_URL    = var.backend_url
+    AMPLIFY_MONOREPO_APP_ROOT = "prompt-guessr-ui"
   }
 }
