@@ -8,37 +8,34 @@ resource "aws_amplify_app" "frontend" {
   # OAuth token for GitHub access
   access_token = var.github_token
 
-  # Build settings for Next.js
-  build_spec = <<-EOT
-    version: 1
-    frontend:
-      phases:
-        preBuild:
-          commands:
-            - cd prompt-guessr-ui
-            - npm ci
-        build:
-          commands:
-            - npm run build
-      artifacts:
-        baseDirectory: prompt-guessr-ui
-        files:
-          - '**/*'
-      cache:
-        paths:
-          - prompt-guessr-ui/node_modules/**/*
-  EOT
+  # Build spec is now in amplify.yml at repo root
+  # Amplify will automatically detect and use it
 
   # Environment variables
   environment_variables = {
     NEXT_PUBLIC_API_URL    = var.backend_url
     NEXT_PUBLIC_SOCKET_URL = var.backend_url
+    # For Next.js SSR in Amplify
+    _LIVE_PACKAGE_UPDATES = jsonencode([{ "pkg" : "next-version", "type" : "internal", "version" : "latest" }])
   }
 
   # Auto-branch creation disabled (manual control)
   enable_auto_branch_creation = false
   enable_branch_auto_build    = true
   enable_branch_auto_deletion = false
+
+  # Custom rules for Next.js SPA routing (prevent 404s)
+  custom_rule {
+    source = "/<*>"
+    status = "404"
+    target = "/index.html"
+  }
+
+  custom_rule {
+    source = "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>"
+    status = "200"
+    target = "/index.html"
+  }
 
   tags = {
     Name = "${var.project_name}-${var.environment}-frontend"

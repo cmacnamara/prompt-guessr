@@ -1,0 +1,17 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd prompt-guessr-ui
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: prompt-guessr-ui
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - prompt-guessr-ui/node_modules/**/*
