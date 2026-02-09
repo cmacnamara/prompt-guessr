@@ -21,12 +21,12 @@ resource "aws_amplify_app" "frontend" {
           commands:
             - npm run build
       artifacts:
-        baseDirectory: .next
+        baseDirectory: prompt-guessr-ui/.next
         files:
           - '**/*'
       cache:
         paths:
-          - node_modules/**/*
+          - prompt-guessr-ui/node_modules/**/*
   EOT
 
   # Environment variables

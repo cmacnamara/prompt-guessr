@@ -2,9 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Optimized production builds with standalone output
-  output: 'standalone',
-  
   // Allow images from specific AI provider domains (security best practice)
   images: {
     remotePatterns: [
