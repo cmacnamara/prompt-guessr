@@ -38,7 +38,7 @@ resource "aws_security_group_rule" "ec2_backend_api" {
   to_port           = 3001
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Backend API and Socket.IO from anywhere"
+  description       = "Backend API and Socket.IO from anywhere (for direct testing)"
   security_group_id = aws_security_group.ec2.id
 }
 

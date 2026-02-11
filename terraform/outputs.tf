@@ -43,6 +43,42 @@ output "vpc_id" {
   value       = module.vpc.vpc_id
 }
 
+output "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer"
+  value       = module.alb.alb_dns_name
+}
+
+output "alb_http_url" {
+  description = "HTTP URL of the Application Load Balancer"
+  value       = module.alb.alb_http_url
+}
+
+output "alb_https_url" {
+  description = "HTTPS URL of the Application Load Balancer (requires certificate)"
+  value       = module.alb.alb_https_url
+}
+
+output "certificate_validation_records" {
+  description = "DNS records to add for SSL certificate validation"
+  value       = var.api_domain_name != "" ? module.acm[0].validation_records : []
+}
+
+output "dns_configuration" {
+  description = "DNS records to configure for your domain"
+  value = var.api_domain_name != "" ? {
+    api_domain = {
+      name  = var.api_domain_name
+      type  = "CNAME"
+      value = module.alb.alb_dns_name
+    }
+    frontend_domain = var.frontend_domain_name != "" ? {
+      name  = var.frontend_domain_name
+      type  = "CNAME"
+      value = module.amplify.default_domain
+    } : null
+  } : null
+}
+
 output "deployment_instructions" {
   description = "Next steps after Terraform apply"
   value       = <<-EOT
@@ -64,13 +100,15 @@ output "deployment_instructions" {
      CORS_ORIGIN=https://${module.amplify.default_domain}
   
   4. Update Amplify environment variables:
-     - NEXT_PUBLIC_API_URL: http://${module.ec2.public_ip}:3001
-     - NEXT_PUBLIC_SOCKET_URL: http://${module.ec2.public_ip}:3001
+     - NEXT_PUBLIC_API_URL: ${var.api_domain_name != "" ? "https://${var.api_domain_name}" : module.alb.alb_http_url}
+     - NEXT_PUBLIC_SOCKET_URL: ${var.api_domain_name != "" ? "https://${var.api_domain_name}" : module.alb.alb_http_url}
   
   5. Deploy backend (see docs/DEPLOYMENT.md)
   
   Frontend URL: https://${module.amplify.default_domain}
-  Backend URL: http://${module.ec2.public_ip}:3001
+  Backend URL (ALB): ${var.api_domain_name != "" ? "https://${var.api_domain_name}" : module.alb.alb_http_url}
+  Backend URL (Direct EC2): http://${module.ec2.public_ip}:3001
   
+  ${var.api_domain_name != "" ? "🔐 SSL Certificate Configuration:\nAdd these DNS records to validate your certificate:\n${join("\n", [for record in module.acm[0].validation_records : "  ${record.type} ${record.name} → ${record.value}"])}\n\nThen add this CNAME record to point your API domain to ALB:\n  CNAME ${var.api_domain_name} → ${module.alb.alb_dns_name}\n" : "⚠️  IMPORTANT - Mixed Content Security:\nThe ALB currently uses HTTP. For production HTTPS:\n1. Get a custom domain name\n2. Update terraform.tfvars with api_domain_name\n3. Re-run terraform apply\n4. Add DNS validation records output by Terraform\n"}
   EOT
 }

@@ -50,6 +50,7 @@ module "security" {
   project_name     = var.project_name
   environment      = var.environment
   allowed_ssh_cidr = var.allowed_ssh_cidr
+  # Don't pass ALB security group here - circular dependency
 }
 
 # EC2 Module
@@ -83,6 +84,46 @@ module "s3" {
   environment  = var.environment
 }
 
+# ACM Certificate Module (for HTTPS)
+# Only created if api_domain_name is provided
+module "acm" {
+  count  = var.api_domain_name != "" ? 1 : 0
+  source = "./modules/acm"
+
+  domain_name = var.api_domain_name
+  # Also include wildcard subdomain
+  subject_alternative_names = ["*.${var.api_domain_name}"]
+  project_name              = var.project_name
+  environment               = var.environment
+}
+
+# Application Load Balancer Module (created after EC2)
+module "alb" {
+  source = "./modules/alb"
+
+  project_name      = var.project_name
+  environment       = var.environment
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
+  ec2_instance_id   = module.ec2.instance_id
+  backend_port      = 3001
+
+  # Use certificate if domain is provided
+  certificate_arn = var.api_domain_name != "" ? module.acm[0].certificate_arn : ""
+  domain_name     = var.api_domain_name
+}
+
+# Add security group rule for ALB -> EC2 traffic (after ALB is created)
+resource "aws_security_group_rule" "ec2_backend_from_alb" {
+  type                     = "ingress"
+  from_port                = 3001
+  to_port                  = 3001
+  protocol                 = "tcp"
+  source_security_group_id = module.alb.alb_security_group_id
+  description              = "Backend API from ALB"
+  security_group_id        = module.security.ec2_security_group_id
+}
+
 # Amplify Module
 module "amplify" {
   source = "./modules/amplify"
@@ -91,5 +132,6 @@ module "amplify" {
   environment       = var.environment
   github_repository = var.github_repository
   github_token      = var.github_token
-  backend_url       = "http://${module.ec2.public_ip}:3001"
+  # Use HTTPS URL if domain is configured, otherwise HTTP
+  backend_url = var.api_domain_name != "" ? "https://${var.api_domain_name}" : module.alb.alb_http_url
 }

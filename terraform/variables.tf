@@ -42,3 +42,17 @@ variable "github_token" {
   # Generate at: https://github.com/settings/tokens
   # Required scopes: repo, admin:repo_hook
 }
+
+variable "api_domain_name" {
+  description = "Domain name for the backend API (e.g., api.prompt-guessr.com)"
+  type        = string
+  default     = ""
+  # Leave empty to skip SSL certificate creation
+}
+
+variable "frontend_domain_name" {
+  description = "Domain name for the frontend (e.g., prompt-guessr.com or www.prompt-guessr.com)"
+  type        = string
+  default     = ""
+  # Leave empty to use Amplify's default domain
+}

@@ -103,6 +103,133 @@ This document lists all required GitHub Secrets for automated deployment workflo
   cd terraform
   terraform output s3_bucket_name
   ```
+- **Example**: `prompt-guessr-images-prod-abc123`
+
+---
+
+### Terraform Variables (for GitHub Actions)
+
+These secrets are used by the Terraform workflow to provision infrastructure.
+
+#### `TF_VAR_ssh_key_name`
+- **Description**: Name of SSH key pair in AWS EC2
+- **How to get**: The name you used when creating the key pair
+- **Example**: `prompt-guessr-key`
+
+#### `TF_VAR_allowed_ssh_cidr`
+- **Description**: Your public IP in CIDR notation for SSH access
+- **How to get**: 
+  ```bash
+  echo "$(curl -s ifconfig.me)/32"
+  ```
+- **Example**: `203.0.113.50/32`
+- **⚠️ Update if your IP changes**
+
+#### `TF_VAR_github_token`
+- **Description**: GitHub personal access token for Amplify
+- **How to get**: https://github.com/settings/tokens
+- **Required scopes**: `repo`, `admin:repo_hook`
+- **Example**: `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+
+#### `TF_VAR_api_domain_name`
+- **Description**: Custom domain for backend API (enables HTTPS)
+- **Example**: `api.prompt-guessr.com`
+- **⚠️ Optional but required for HTTPS** - Leave empty to use HTTP-only ALB
+
+#### `TF_VAR_frontend_domain_name`
+- **Description**: Custom domain for frontend (optional)
+- **Example**: `prompt-guessr.com` or `www.prompt-guessr.com`
+- **⚠️ Optional** - Leave empty to use Amplify's default domain
+
+---
+
+## How Secrets Work
+
+### Local Development
+- Create `terraform/terraform.tfvars` file with your values
+- This file is in `.gitignore` and never committed
+- Terraform reads variables from this file
+
+### GitHub Actions (CI/CD)
+- Variables are stored as GitHub Secrets
+- Passed to Terraform as environment variables with `TF_VAR_` prefix
+- Example: `TF_VAR_api_domain_name` → Terraform variable `api_domain_name`
+
+### Adding/Updating Secrets
+
+1. Navigate to repository on GitHub.com
+2. Go to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret** (or edit existing)
+4. Name must match exactly (case-sensitive)
+5. Paste the value
+6. Click **Add secret**
+
+**Example:**
+```
+Name: TF_VAR_api_domain_name
+Value: api.prompt-guessr.com
+```
+
+---
+
+## Complete Secret Checklist
+
+Use this checklist to ensure all secrets are configured:
+
+### AWS & Infrastructure
+- [ ] `AWS_ACCESS_KEY_ID`
+- [ ] `AWS_SECRET_ACCESS_KEY`
+- [ ] `TF_VAR_ssh_key_name`
+- [ ] `TF_VAR_allowed_ssh_cidr`
+
+### GitHub Integration
+- [ ] `TF_VAR_github_token`
+
+### Backend Deployment
+- [ ] `EC2_SSH_KEY`
+- [ ] `EC2_HOST` (set after first Terraform apply)
+- [ ] `REDIS_URL` (set after first Terraform apply)
+- [ ] `S3_BUCKET_NAME` (set after first Terraform apply)
+
+### Backend Environment
+- [ ] `CORS_ORIGIN` (Amplify URL)
+- [ ] `IMAGE_PROVIDER` (e.g., `mock`, `huggingface`, `openai`)
+- [ ] `HUGGINGFACE_API_KEY`
+- [ ] `OPENAI_API_KEY` (optional)
+
+### Custom Domains (Optional for HTTPS)
+- [ ] `TF_VAR_api_domain_name` (e.g., `api.prompt-guessr.com`)
+- [ ] `TF_VAR_frontend_domain_name` (optional, e.g., `prompt-guessr.com`)
+
+---
+
+## Security Best Practices
+
+1. **Never commit secrets to Git**
+   - Always use `.gitignore` for `*.tfvars` files
+   - Never hardcode secrets in code
+   
+2. **Rotate secrets regularly**
+   - Especially AWS access keys
+   - GitHub tokens
+   - API keys
+
+3. **Use least privilege**
+   - IAM users should have minimal required permissions
+   - Don't use root AWS credentials
+
+4. **Monitor usage**
+   - Check AWS CloudTrail for suspicious activity
+   - Review GitHub Actions logs periodically
+
+5. **Delete unused secrets**
+   - Remove secrets for destroyed infrastructure
+   - Clean up test/dev secrets
+- **How to get**: From Terraform output
+  ```bash
+  cd terraform
+  terraform output s3_bucket_name
+  ```
 - **Example**: `prompt-guessr-images-a1b2c3d4`
 
 #### `IMAGE_PROVIDER`

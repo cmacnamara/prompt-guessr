@@ -91,6 +91,8 @@ jobs:
           TF_VAR_allowed_ssh_cidr: ${{ secrets.TF_VAR_allowed_ssh_cidr }}
           TF_VAR_github_repository: ${{ github.repository }}
           TF_VAR_github_token: ${{ secrets.TF_VAR_github_token }}
+          TF_VAR_api_domain_name: ${{ secrets.TF_VAR_api_domain_name }}
+          TF_VAR_frontend_domain_name: ${{ secrets.TF_VAR_frontend_domain_name }}
       
       - name: Save plan
         uses: actions/upload-artifact@v4
@@ -157,6 +159,8 @@ jobs:
           TF_VAR_allowed_ssh_cidr: ${{ secrets.TF_VAR_allowed_ssh_cidr }}
           TF_VAR_github_repository: ${{ github.repository }}
           TF_VAR_github_token: ${{ secrets.TF_VAR_github_token }}
+          TF_VAR_api_domain_name: ${{ secrets.TF_VAR_api_domain_name }}
+          TF_VAR_frontend_domain_name: ${{ secrets.TF_VAR_frontend_domain_name }}
       
       - name: Output infrastructure details
         working-directory: terraform
@@ -203,3 +207,5 @@ jobs:
           TF_VAR_allowed_ssh_cidr: ${{ secrets.TF_VAR_allowed_ssh_cidr }}
           TF_VAR_github_repository: ${{ github.repository }}
           TF_VAR_github_token: ${{ secrets.TF_VAR_github_token }}
+          TF_VAR_api_domain_name: ${{ secrets.TF_VAR_api_domain_name }}
+          TF_VAR_frontend_domain_name: ${{ secrets.TF_VAR_frontend_domain_name }}

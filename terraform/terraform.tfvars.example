@@ -24,3 +24,12 @@ github_repository = "yourusername/prompt-guessr"
 # Generate at: https://github.com/settings/tokens
 # Required scopes: repo, admin:repo_hook
 github_token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Custom domain configuration (optional but recommended for HTTPS)
+# Backend API domain - will get SSL certificate
+api_domain_name = "api.prompt-guessr.com"
+
+# Frontend domain (optional) - for custom Amplify domain
+frontend_domain_name = "prompt-guessr.com"
+# Or use www subdomain: "www.prompt-guessr.com"
+# Leave empty to use Amplify's default domain
