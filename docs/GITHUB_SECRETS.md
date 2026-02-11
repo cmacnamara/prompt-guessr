@@ -87,14 +87,17 @@ This document lists all required GitHub Secrets for automated deployment workflo
 - **Example**: `redis://prompt-guessr-redis.abc123.0001.use1.cache.amazonaws.com:6379`
 
 #### `CORS_ORIGIN`
-- **Description**: Amplify frontend URL for CORS configuration
+- **Description**: Amplify frontend URL(s) for CORS configuration (comma-separated for multiple)
 - **How to get**: From Terraform output or Amplify console
   ```bash
   cd terraform
   terraform output amplify_default_domain
   # Add https:// prefix
   ```
-- **Example**: `https://main.d1a2b3c4d5e6f7.amplifyapp.com`
+- **Example (single origin)**: `https://main.d1a2b3c4d5e6f7.amplifyapp.com`
+- **Example (multiple origins)**: `https://main.d1a2b3c4d5e6f7.amplifyapp.com,https://prompt-guessr.com`
+- **⚠️ Note**: Use comma separation (no spaces) for multiple domains
+- **For your deployment**: `https://main.d2sk5w35cetf0e.amplifyapp.com`
 
 #### `S3_BUCKET_NAME`
 - **Description**: S3 bucket name for image storage

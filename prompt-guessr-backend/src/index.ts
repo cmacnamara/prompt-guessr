@@ -15,9 +15,11 @@ const app = express();
 const httpServer = createServer(app);
 
 /**
- * Get CORS origin from environment
+ * Get CORS origins from environment
+ * Supports comma-separated list for multiple domains
  */
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
+const CORS_ORIGIN_RAW = process.env.CORS_ORIGIN || 'http://localhost:3000';
+const CORS_ORIGINS = CORS_ORIGIN_RAW.split(',').map(origin => origin.trim());
 
 // Validate CORS_ORIGIN in production
 if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
@@ -25,12 +27,30 @@ if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
   process.exit(1);
 }
 
+logger.info(`CORS enabled for origins: ${CORS_ORIGINS.join(', ')}`);
+
+/**
+ * CORS origin checker - allows single origin or comma-separated list
+ */
+const checkOrigin = (origin: string | undefined): string | boolean => {
+  // Allow requests with no origin (like mobile apps or Postman)
+  if (!origin) return true;
+  
+  // Check if origin is in allowed list
+  if (CORS_ORIGINS.includes(origin)) {
+    return origin;
+  }
+  
+  // Deny if not in allowed list
+  return false;
+};
+
 /**
  * Configure Socket.IO with CORS
  */
 const io = new Server(httpServer, {
   cors: {
-    origin: CORS_ORIGIN,
+    origin: checkOrigin,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -43,10 +63,21 @@ app.use(express.json());
 
 // CORS for REST endpoints
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  res.header('Access-Control-Allow-Credentials', 'true');
+  const origin = req.headers.origin;
+  const allowedOrigin = checkOrigin(origin);
+  
+  if (allowedOrigin) {
+    res.header('Access-Control-Allow-Origin', typeof allowedOrigin === 'string' ? allowedOrigin : origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   next();
 });
 
@@ -72,6 +103,7 @@ app.get('/health', (req, res) => {
       timestamp: new Date().toISOString() 
     });
   } catch (error) {
+    logger.error('Health check error:', error);
     res.status(503).json({ 
       status: 'error', 
       redis: 'not_initialized',
@@ -92,6 +124,7 @@ app.get('/ready', (req, res) => {
       res.status(503).json({ ready: false, reason: 'redis_not_ready' });
     }
   } catch (error) {
+    logger.error('Ready check error:', error);
     res.status(503).json({ ready: false, reason: 'not_initialized' });
   }
 });
@@ -143,6 +176,7 @@ process.on('SIGINT', shutdown);
 /**
  * Start server
  */
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
   try {
     // Initialize Redis
