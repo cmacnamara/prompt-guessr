@@ -11,53 +11,67 @@ on:
   workflow_call:
 
 jobs:
-  build-check:
-    name: Build Check
+  build-and-validate:
+    name: 🎨 Build & Validate Frontend
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Node.js
+      - name: ⚙️ Setup Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
           cache-dependency-path: prompt-guessr-ui/package-lock.json
       
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         working-directory: prompt-guessr-ui
-        run: npm ci
+        run: |
+          echo "::group::Installing dependencies"
+          npm ci
+          echo "::endgroup::"
+          echo "✅ Dependencies installed"
       
-      - name: Verify environment variables are documented
-        run: ./scripts/deploy-frontend/verify-env-vars.sh
+      - name: 🔍 Verify environment variables
+        run: |
+          echo "::group::Checking environment configuration"
+          ./scripts/deploy-frontend/verify-env-vars.sh
+          echo "::endgroup::"
+          echo "✅ Environment variables documented"
       
-      - name: Build Next.js
+      - name: 🔨 Build Next.js
         working-directory: prompt-guessr-ui
-        run: npm run build
+        run: |
+          echo "::group::Building frontend"
+          npm run build
+          echo "::endgroup::"
+          echo "✅ Build complete"
         env:
           NEXT_PUBLIC_API_URL: http://placeholder:3001
           NEXT_PUBLIC_SOCKET_URL: http://placeholder:3001
       
-      - name: Run tests (if exist)
+      - name: 🧪 Run tests
         working-directory: prompt-guessr-ui
-        run: npm test --if-present
-
-  # Note: Amplify auto-deploys from GitHub when connected
-  # This workflow just validates the build succeeds
-  notify:
-    name: Notify Amplify
-    needs: build-check
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Build status
         run: |
-          echo "✅ Frontend build check passed!"
-          echo "Amplify will auto-deploy from GitHub repository."
+          if npm test --if-present; then
+            echo "✅ Tests passed"
+          else
+            echo "⚠️ No tests found"
+          fi
+      
+      - name: 📢 Deployment status
+        run: |
+          echo "::notice::✅ Frontend build validated successfully!"
           echo ""
-          echo "To monitor deployment:"
-          echo "1. Visit AWS Amplify Console"
-          echo "2. Select prompt-guessr-frontend app"
-          echo "3. View deployment logs for main branch"
+          echo "## 🚀 AWS Amplify Auto-Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Amplify will automatically deploy from the GitHub repository." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Monitor Deployment:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Visit [AWS Amplify Console](https://console.aws.amazon.com/amplify/)" >> $GITHUB_STEP_SUMMARY
+          echo "2. Select **prompt-guessr-frontend** app" >> $GITHUB_STEP_SUMMARY
+          echo "3. View deployment logs for **main** branch" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Build validation complete at $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY

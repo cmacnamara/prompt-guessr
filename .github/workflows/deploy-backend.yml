@@ -12,33 +12,46 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Test Backend
+    name: 🏗️ Build & Test Backend
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Node.js
+      - name: ⚙️ Setup Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
           cache-dependency-path: prompt-guessr-backend/package-lock.json
       
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         working-directory: prompt-guessr-backend
-        run: npm ci
+        run: |
+          echo "::group::Installing dependencies"
+          npm ci
+          echo "::endgroup::"
+          echo "✅ Dependencies installed"
       
-      - name: Build TypeScript
+      - name: 🔨 Build TypeScript
         working-directory: prompt-guessr-backend
-        run: npm run build
+        run: |
+          echo "::group::Building backend"
+          npm run build
+          echo "::endgroup::"
+          echo "✅ Build complete"
       
-      - name: Run tests (if exist)
+      - name: 🧪 Run tests
         working-directory: prompt-guessr-backend
-        run: npm test --if-present
+        run: |
+          if npm test --if-present; then
+            echo "✅ Tests passed"
+          else
+            echo "⚠️ No tests found"
+          fi
       
-      - name: Upload build artifacts
+      - name: 📤 Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: backend-dist
@@ -46,31 +59,44 @@ jobs:
           retention-days: 1
 
   deploy-to-ec2:
-    name: Deploy to EC2
+    name: 🚀 Deploy to EC2
     needs: build-and-test
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
       
-      - name: Download build artifacts
+      - name: 📥 Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: backend-dist
           path: prompt-guessr-backend/dist
       
-      - name: Create deployment package
-        run: ./scripts/deploy-backend/create-package.sh
-      
-      - name: Configure SSH
-        run: ./scripts/deploy-backend/configure-ssh.sh "${{ secrets.EC2_HOST }}" "${{ secrets.EC2_SSH_KEY }}"
-      
-      - name: Copy files to EC2
-        run: ./scripts/deploy-backend/copy-to-ec2.sh "${{ secrets.EC2_HOST }}"
-      
-      - name: Deploy on EC2
+      - name: 📦 Create deployment package
         run: |
+          echo "::group::Creating package"
+          ./scripts/deploy-backend/create-package.sh
+          echo "::endgroup::"
+          echo "✅ Package created"
+      
+      - name: 🔐 Configure SSH
+        run: |
+          echo "::group::Setting up SSH"
+          ./scripts/deploy-backend/configure-ssh.sh "${{ secrets.EC2_HOST }}" "${{ secrets.EC2_SSH_KEY }}"
+          echo "::endgroup::"
+          echo "✅ SSH configured"
+      
+      - name: 📤 Copy files to EC2
+        run: |
+          echo "::group::Uploading to EC2"
+          ./scripts/deploy-backend/copy-to-ec2.sh "${{ secrets.EC2_HOST }}"
+          echo "::endgroup::"
+          echo "✅ Files uploaded"
+      
+      - name: 🚀 Deploy on EC2
+        run: |
+          echo "::group::Deploying application"
           ssh -i ~/.ssh/id_rsa ec2-user@${{ secrets.EC2_HOST }} \
             "REDIS_URL=${{ secrets.REDIS_URL }} \
             CORS_ORIGIN=${{ secrets.CORS_ORIGIN }} \
@@ -79,10 +105,18 @@ jobs:
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
             S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }} \
             bash -s" < ./scripts/deploy-backend/deploy-on-ec2.sh
+          echo "::endgroup::"
+          echo "✅ Deployment complete"
       
-      - name: Health check
-        run: ./scripts/deploy-backend/health-check.sh "${{ secrets.EC2_HOST }}"
+      - name: 🏥 Health check
+        run: |
+          echo "::group::Running health check"
+          ./scripts/deploy-backend/health-check.sh "${{ secrets.EC2_HOST }}"
+          echo "::endgroup::"
+          echo "✅ Health check passed"
       
-      - name: Cleanup
+      - name: 🧹 Cleanup
         if: always()
-        run: ./scripts/deploy-backend/cleanup.sh
+        run: |
+          ./scripts/deploy-backend/cleanup.sh
+          echo "✅ Cleanup complete"

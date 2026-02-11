@@ -50,7 +50,9 @@ jobs:
     uses: ./.github/workflows/sync-types.yml
     secrets: inherit
   
-  # Step 3: Deploy backend to EC2
+  # Step 3 & 4: Deploy frontend and backend in parallel
+  # These are independent and can run simultaneously after sync-types completes
+  # This saves deployment time by running both in parallel instead of sequentially
   deploy-backend:
     name: Deploy Backend
     if: ${{ inputs.run_deploy_backend && (always() && !cancelled()) }}
@@ -58,29 +60,64 @@ jobs:
     uses: ./.github/workflows/deploy-backend.yml
     secrets: inherit
   
-  # Step 4: Deploy frontend to Amplify
   deploy-frontend:
     name: Deploy Frontend
     if: ${{ inputs.run_deploy_frontend && (always() && !cancelled()) }}
-    needs: [deploy-backend]
+    needs: [sync-types]
     uses: ./.github/workflows/deploy-frontend.yml
     secrets: inherit
   
   summary:
-    name: Deployment Summary
+    name: 📊 Deployment Summary
     needs: [terraform, sync-types, deploy-backend, deploy-frontend]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Generate Summary
         run: |
-          echo "# Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          # Function to convert job result to emoji
+          result_emoji() {
+            case "$1" in
+              success) echo "✅" ;;
+              failure) echo "❌" ;;
+              skipped) echo "⏭️" ;;
+              cancelled) echo "🚫" ;;
+              *) echo "❓" ;;
+            esac
+          }
+          
+          # Generate summary
+          echo "# 📊 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Workflow Results" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** \`${{ github.workflow }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Terraform**: ${{ needs.terraform.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Sync Types**: ${{ needs.sync-types.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend Deploy**: ${{ needs.deploy-backend.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend Deploy**: ${{ needs.deploy-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 🎯 Workflow Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Triggered by: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏗️ Terraform | $(result_emoji "${{ needs.terraform.result }}") | \`${{ needs.terraform.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔄 Sync Types | $(result_emoji "${{ needs.sync-types.result }}") | \`${{ needs.sync-types.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🖥️ Backend Deploy | $(result_emoji "${{ needs.deploy-backend.result }}") | \`${{ needs.deploy-backend.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎨 Frontend Deploy | $(result_emoji "${{ needs.deploy-frontend.result }}") | \`${{ needs.deploy-frontend.result }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          if [[ "${{ needs.terraform.result }}" == "success" || "${{ needs.terraform.result }}" == "skipped" ]] && \
+             [[ "${{ needs.sync-types.result }}" == "success" || "${{ needs.sync-types.result }}" == "skipped" ]] && \
+             [[ "${{ needs.deploy-backend.result }}" == "success" || "${{ needs.deploy-backend.result }}" == "skipped" ]] && \
+             [[ "${{ needs.deploy-frontend.result }}" == "success" || "${{ needs.deploy-frontend.result }}" == "skipped" ]]; then
+            echo "## ✅ Overall Status: SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All deployment stages completed successfully! 🎉" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ⚠️ Overall Status: COMPLETED WITH ISSUES" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "One or more stages failed or were cancelled. Please review the logs above." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Completed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")*" >> $GITHUB_STEP_SUMMARY
