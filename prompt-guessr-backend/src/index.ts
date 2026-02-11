@@ -165,19 +165,40 @@ io.on('connection', (socket) => {
 async function shutdown() {
   logger.info('Shutting down server...');
   
-  // Close Socket.IO connections
-  io.close(() => {
-    logger.info('Socket.IO closed');
-  });
+  // Set a timeout to force exit if shutdown takes too long
+  const forceExitTimeout = setTimeout(() => {
+    logger.error('Graceful shutdown timed out, forcing exit');
+    process.exit(1);
+  }, 10000); // 10 second timeout
+  
+  try {
+    // Close Socket.IO connections first (wrap in promise to await)
+    await new Promise<void>((resolve) => {
+      io.close(() => {
+        logger.info('Socket.IO closed');
+        resolve();
+      });
+    });
 
-  // Close Redis connection
-  await closeRedis();
+    // Close Redis connection
+    await closeRedis();
 
-  // Close HTTP server
-  httpServer.close(() => {
-    logger.info('HTTP server closed');
+    // Close HTTP server
+    await new Promise<void>((resolve) => {
+      httpServer.close(() => {
+        logger.info('HTTP server closed');
+        resolve();
+      });
+    });
+    
+    logger.info('Graceful shutdown complete');
+    clearTimeout(forceExitTimeout);
     process.exit(0);
-  });
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    clearTimeout(forceExitTimeout);
+    process.exit(1);
+  }
 }
 
 // Handle shutdown signals
