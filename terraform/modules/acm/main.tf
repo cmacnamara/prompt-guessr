@@ -15,6 +15,17 @@ resource "aws_acm_certificate" "main" {
   }
 }
 
+# Note: This validation resource will wait up to 45 minutes for DNS records to be added
+# If you haven't added the DNS validation records yet, this will timeout
+# Solution: Add the DNS records shown in the output, then run terraform apply again
+resource "aws_acm_certificate_validation" "main" {
+  certificate_arn = aws_acm_certificate.main.arn
+
+  timeouts {
+    create = "45m"
+  }
+}
+
 # Output the DNS validation records
 # You'll need to add these to your domain's DNS settings
 output "certificate_validation_records" {
