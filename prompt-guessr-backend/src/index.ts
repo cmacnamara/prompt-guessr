@@ -130,6 +130,17 @@ app.get('/ready', (req, res) => {
 });
 
 /**
+ * Debug endpoint - shows current CORS configuration
+ */
+app.get('/debug/cors', (req, res) => {
+  res.json({
+    corsOrigins: CORS_ORIGINS,
+    corsOriginRaw: CORS_ORIGIN_RAW,
+    nodeEnv: process.env.NODE_ENV,
+  });
+});
+
+/**
  * Mount API routes
  */
 app.use('/api/rooms', roomRoutes);
