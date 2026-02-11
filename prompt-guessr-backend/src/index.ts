@@ -198,7 +198,7 @@ process.on('SIGINT', shutdown);
     logger.info('✨ Image service initialized');
 
     // Start HTTP server
-    const PORT = process.env.PORT || 3001;
+    const PORT = parseInt(process.env.PORT || '3001', 10);
     const HOST = '0.0.0.0'; // Listen on all interfaces (needed for ALB)
     httpServer.listen(PORT, HOST, () => {
       logger.info(`🚀 Server running on http://${HOST}:${PORT}`);
