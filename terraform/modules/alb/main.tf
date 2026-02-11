@@ -49,6 +49,7 @@ resource "aws_lb" "main" {
   enable_deletion_protection       = false
   enable_http2                     = true
   enable_cross_zone_load_balancing = true
+  idle_timeout                     = 120 # Socket.IO needs longer than default 60s for long-polling
 
   tags = {
     Name        = "${var.project_name}-alb-${var.environment}"
@@ -74,6 +75,13 @@ resource "aws_lb_target_group" "backend" {
     protocol            = "HTTP"
     timeout             = 5
     unhealthy_threshold = 3
+  }
+
+  # Socket.IO requires sticky sessions to ensure clients connect to same backend
+  stickiness {
+    type            = "lb_cookie"
+    enabled         = true
+    cookie_duration = 86400 # 24 hours
   }
 
   deregistration_delay = 30
