@@ -21,11 +21,21 @@ export function getSocket(): Socket {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
+      reconnectionDelayMax: 5000,
+      // Transport configuration - prefer WebSocket, fallback to polling
+      transports: ['websocket', 'polling'],
+      upgrade: true, // Allow upgrading from polling to websocket
+      // Timeouts
+      timeout: 20000, // Connection timeout (20s)
+      // Enable logging in development
+      ...(process.env.NODE_ENV === 'development' && {
+        
+      }),
     });
 
     // Connection event logging
     socket.on('connect', () => {
-      console.log('✅ Socket connected:', socket?.id);
+      console.log('✅ Socket connected:', socket?.id, 'Transport:', socket?.io.engine.transport.name);
     });
 
     socket.on('disconnect', (reason) => {
@@ -33,7 +43,25 @@ export function getSocket(): Socket {
     });
 
     socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+      console.error('❌ Socket connection error:', error.message);
+      console.error('Socket URL:', SOCKET_URL);
+    });
+
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`🔄 Reconnection attempt ${attemptNumber}...`);
+    });
+
+    socket.on('reconnect', (attemptNumber) => {
+      console.log(`✅ Reconnected after ${attemptNumber} attempts`);
+    });
+
+    socket.on('reconnect_failed', () => {
+      console.error('❌ Reconnection failed - max attempts reached');
+    });
+
+    // Log transport upgrades
+    socket.io.engine.on('upgrade', (transport: any) => {
+      console.log('⬆️ Transport upgraded to:', transport.name);
     });
   }
 

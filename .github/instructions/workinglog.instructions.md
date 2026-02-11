@@ -390,6 +390,56 @@ JSON.stringify(new Map([['a', 1]])) // Returns: "{}" ❌
 - Now each phase (lobby, prompt_submit, image_generate) has its own component
 - Files: `/prompt-guessr-ui/src/app/room/[code]/page.tsx`, `/prompt-guessr-ui/src/app/room/[code]/Lobby.tsx`
 
+#### Problem 8: Socket.IO Not Connecting in Production (EC2/ALB Deployment)
+**Error**: Socket.IO connections failing on deployed app, can't ready up in lobby
+
+**Symptoms**:
+- HTTP/REST endpoints work fine (can access lobby)
+- Socket.IO connections fail (can't ready up or receive real-time updates)
+- PM2 might show "launching" instead of "online"
+
+**Root Causes**:
+1. **PM2 Ready Signal Missing**: 
+   - PM2 config had `wait_ready: true` but app never sent `process.send('ready')`
+   - PM2 thinks app isn't fully initialized
+   - Might be restarting or not routing traffic properly
+
+2. **Socket.IO Config Not ALB-Optimized**:
+   - Default timeouts too short for ALB proxy
+   - Transport configuration not explicit
+   - Missing upgrade timeout settings
+
+3. **Insufficient Logging**:
+   - Hard to diagnose connection issues in production
+   - No visibility into transport types or upgrades
+
+**Solutions**:
+1. **Backend** (`/prompt-guessr-backend/src/index.ts`):
+   - Added `process.send('ready')` in server startup callback
+   - Explicitly set transports: `['websocket', 'polling']`
+   - Increased timeouts: 60s ping timeout, 25s ping interval
+   - Added upgrade timeout (10s) and max buffer size
+   - Enhanced logging for connections, transports, upgrades, errors
+
+2. **Frontend** (`/prompt-guessr-ui/src/lib/socket-client.ts`):
+   - Matched backend transport configuration
+   - Increased connection timeout to 20s
+   - Added reconnection delay max (5s)
+   - Enhanced logging for all connection events
+
+3. **Documentation** (`/SOCKET_TROUBLESHOOTING.md`):
+   - Created comprehensive troubleshooting guide
+   - Deployment verification checklist
+   - Common issues and diagnostic commands
+
+**Verification Steps**:
+```bash
+# On EC2 after deployment
+pm2 logs | grep "ready signal"  # Should see "📡 Sent ready signal to PM2"
+pm2 status                       # Should show "online" not "launching"
+curl http://localhost:3001/health # Should return 200
+```
+
 ### ✅ Phase 7: Reveal Phase (Complete)
 **What we built:**
 1. **GuessReveal Component** (`/prompt-guessr-ui/src/app/room/[code]/GuessReveal.tsx`)
@@ -436,6 +486,50 @@ JSON.stringify(new Map([['a', 1]])) // Returns: "{}" ❌
    - Added GuessReveal import
    - Added reveal_results rendering case (before round_end/game_end)
    - Passes handleCompleteReveal handler to GuessReveal component
+
+### ✅ Phase 8: Production Socket.IO Deployment Fix (Complete)
+**What we fixed:**
+1. **PM2 Ready Signal** (`/prompt-guessr-backend/src/index.ts`)
+   - **Problem**: PM2 config had `wait_ready: true` but app never sent ready signal
+   - **Impact**: PM2 might think app wasn't fully initialized
+   - **Fix**: Added `process.send('ready')` in server startup callback
+   - Now logs "📡 Sent ready signal to PM2" when ready
+
+2. **Socket.IO Transport Configuration** (`/prompt-guessr-backend/src/index.ts`)
+   - **Problem**: Default Socket.IO config might not handle ALB proxy properly
+   - **Fixes Applied**:
+     - Explicitly set transports: `['websocket', 'polling']`
+     - Increased ping/pong timeouts for ALB environment (60s ping timeout, 25s ping interval)
+     - Added upgrade timeout (10s)
+     - Set max buffer size (1MB)
+     - Enabled ALB proxy support with `allowEIO3: true`
+
+3. **Enhanced Connection Logging** (`/prompt-guessr-backend/src/index.ts`)
+   - Added detailed logging for Socket.IO connections
+   - Logs client IP, transport type (websocket/polling)
+   - Logs transport upgrades (polling → websocket)
+   - Logs disconnect reasons and errors
+   - Helps diagnose connection issues in production
+
+4. **Frontend Socket Configuration** (`/prompt-guessr-ui/src/lib/socket-client.ts`)
+   - Matched backend transport configuration
+   - Set explicit transports: `['websocket', 'polling']`
+   - Increased connection timeout to 20s
+   - Added reconnection delay max (5s)
+   - Enhanced logging for connections, disconnects, reconnects
+   - Logs transport type and upgrade events
+
+5. **Troubleshooting Documentation** (`/SOCKET_TROUBLESHOOTING.md`)
+   - Created comprehensive troubleshooting guide
+   - Deployment steps and verification checklist
+   - Common issues and solutions
+   - Diagnostic commands for EC2/ALB
+   - Emergency recovery procedures
+
+**Root Causes**:
+- PM2 waiting indefinitely for ready signal that was never sent
+- Socket.IO not optimized for ALB proxy environment
+- Insufficient logging to debug connection issues in production
 
 ---
 
@@ -636,6 +730,6 @@ prompt-guessr-ui/
 
 ---
 
-**Last Updated**: December 27, 2025 - 21:15
-**Current Phase**: Reveal Phase (Complete) → Next: Round transitions
-**Session State**: Full gameplay loop working end-to-end with reveal phase showing scored guesses
+**Last Updated**: February 11, 2026 - Socket.IO Production Deployment Fix
+**Current Phase**: Production Socket.IO Debugging
+**Session State**: Fixed PM2 ready signal and Socket.IO transport configuration for EC2/ALB deployment
