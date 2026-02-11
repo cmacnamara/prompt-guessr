@@ -59,7 +59,7 @@ resource "aws_lb" "main" {
 
 # Target Group for Backend
 resource "aws_lb_target_group" "backend" {
-  name     = "${var.project_name}-backend-tg-${var.environment}"
+  name     = "${var.project_name}-tg-${var.environment}"
   port     = var.backend_port
   protocol = "HTTP"
   vpc_id   = var.vpc_id
