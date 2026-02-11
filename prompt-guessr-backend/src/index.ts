@@ -50,9 +50,8 @@ const checkOrigin = (origin: string | undefined): string | boolean => {
  */
 const io = new Server(httpServer, {
   cors: {
-    origin: checkOrigin,
-    methods: ['GET', 'POST'],
-    credentials: true,
+    origin: '*', // TEMPORARY: Allow all originsmethods: ['GET', 'POST'],
+    credentials: false,
   },
 });
 
