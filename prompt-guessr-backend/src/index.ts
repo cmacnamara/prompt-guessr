@@ -199,8 +199,9 @@ process.on('SIGINT', shutdown);
 
     // Start HTTP server
     const PORT = process.env.PORT || 3001;
-    httpServer.listen(PORT, () => {
-      logger.info(`🚀 Server running on http://localhost:${PORT}`);
+    const HOST = '0.0.0.0'; // Listen on all interfaces (needed for ALB)
+    httpServer.listen(PORT, HOST, () => {
+      logger.info(`🚀 Server running on http://${HOST}:${PORT}`);
       logger.info(`🔌 Socket.IO ready for connections`);
     });
   } catch (error) {
