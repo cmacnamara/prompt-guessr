@@ -35,7 +35,13 @@ export function getSocket(): Socket {
 
     // Connection event logging
     socket.on('connect', () => {
-      console.log('✅ Socket connected:', socket?.id, 'Transport:', socket?.io.engine.transport.name);
+      if (!socket) return;
+      console.log('✅ Socket connected:', socket.id, 'Transport:', socket.io.engine.transport.name);
+      
+      // Log transport upgrades (set up after connection)
+      socket.io.engine.on('upgrade', (transport: any) => {
+        console.log('⬆️ Transport upgraded to:', transport.name);
+      });
     });
 
     socket.on('disconnect', (reason) => {
@@ -57,11 +63,6 @@ export function getSocket(): Socket {
 
     socket.on('reconnect_failed', () => {
       console.error('❌ Reconnection failed - max attempts reached');
-    });
-
-    // Log transport upgrades
-    socket.io.engine.on('upgrade', (transport: any) => {
-      console.log('⬆️ Transport upgraded to:', transport.name);
     });
   }
 

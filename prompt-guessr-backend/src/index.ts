@@ -54,14 +54,6 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST'],
     credentials: true,
   },
-  // Transport configuration for ALB/production
-  transports: ['websocket', 'polling'], // Try WebSocket first, fallback to polling
-  pingTimeout: 60000, // How long to wait for a ping response before disconnect (60s)
-  pingInterval: 25000, // How often to send a ping packet (25s)
-  upgradeTimeout: 10000, // Time to wait for upgrade from polling to websocket
-  maxHttpBufferSize: 1e6, // 1MB max message size
-  // Allow connections from behind proxies (ALB)
-  allowEIO3: true, // Support older clients if needed
 });
 
 /**
@@ -69,8 +61,13 @@ const io = new Server(httpServer, {
  */
 app.use(express.json());
 
-// CORS for REST endpoints
+// CORS for REST endpoints (skip Socket.IO paths)
 app.use((req, res, next) => {
+  // Let Socket.IO handle its own CORS
+  if (req.path.startsWith('/socket.io/')) {
+    return next();
+  }
+  
   const origin = req.headers.origin;
   const allowedOrigin = checkOrigin(origin);
   
@@ -160,11 +157,6 @@ io.on('connection', (socket) => {
   const clientIp = socket.handshake.address;
   const transport = socket.conn.transport.name;
   logger.info(`Socket connected: ${socket.id} from ${clientIp} via ${transport}`);
-
-  // Log transport upgrades (polling -> websocket)
-  socket.conn.on('upgrade', (transport) => {
-    logger.info(`Socket ${socket.id} upgraded to ${transport.name}`);
-  });
 
   // Register room event handlers
   registerRoomHandlers(io, socket);
