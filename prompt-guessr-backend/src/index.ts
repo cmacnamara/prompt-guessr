@@ -50,7 +50,8 @@ const checkOrigin = (origin: string | undefined): string | boolean => {
  */
 const io = new Server(httpServer, {
   cors: {
-    origin: '*', // TEMPORARY: Allow all originsmethods: ['GET', 'POST'],
+    origin: '*', // TEMPORARY: Allow all origins
+    methods: ['GET', 'POST'],
     credentials: false,
   },
 });
@@ -67,15 +68,11 @@ app.use((req, res, next) => {
     return next();
   }
   
-  const origin = req.headers.origin;
-  const allowedOrigin = checkOrigin(origin);
-  
-  if (allowedOrigin) {
-    res.header('Access-Control-Allow-Origin', typeof allowedOrigin === 'string' ? allowedOrigin : origin);
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-  }
+  // TEMPORARY: Allow all origins (matching Socket.IO config above)
+  // TODO: Set CORS_ORIGIN environment variable to lock down to specific domains
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   // Handle preflight OPTIONS requests
   if (req.method === 'OPTIONS') {
